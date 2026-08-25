@@ -29,7 +29,13 @@ chrome.runtime.onMessage.addListener(async (message) => {
       "checked"
     ).set;
     await new Promise(resolve => setTimeout(resolve, 500));
-    setValue(titleInput,inputSetter,"NWOB "+ data.description+" SZ "+data.size+" "+ data.sku);
+    if (data.box){
+      box="NWB";
+    }
+    else{
+      box="NWOB";
+    }
+    setValue(titleInput,inputSetter,box+" "+ data.description+" SZ "+data.size+" "+ data.sku);
     await new Promise(resolve => setTimeout(resolve, 500));
     if (!subtitleCheckbox.checked){
       setValue(subtitleCheckbox,checkerSetter,true)
@@ -55,7 +61,15 @@ chrome.runtime.onMessage.addListener(async (message) => {
     const noBoxRadio = document.querySelector(
   'input[name="condition"][value="1500"]'
 );
-    noBoxRadio.click();
+    const boxRadio = document.querySelector(
+  'input[name="condition"][value="1000"]'
+);
+    if (data.box){
+      boxRadio.click();
+    }
+    else{
+      noBoxRadio.click();
+    }
     await new Promise(resolve => setTimeout(resolve, 500));
     const statusDoneButton = document.querySelector('button[_track="0.condition.2.Done"]');
     statusDoneButton.click();

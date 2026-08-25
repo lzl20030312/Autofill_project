@@ -4,7 +4,8 @@ document.getElementById("autofill").addEventListener("click", async () => {
     size: document.getElementById("size").value,
     shelf: document.getElementById("shelf").value,
     sku: document.getElementById("sku").value,
-    price: document.getElementById("price").value
+    price: document.getElementById("price").value,
+    box: document.getElementById("box").checked
   };
 
   const [tab] = await chrome.tabs.query({
