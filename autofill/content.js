@@ -9,6 +9,7 @@ function setValue(element, setter,value){
 );
 }
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+   console.log("MESSAGE RECEIVED:", message);
   if (message.action === "AUTOFILL") {
     const data = message.data;
     const titleInput =
@@ -44,7 +45,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
      const subtitleInput =
       document.querySelector('input[name="customLabel"]');
    
-    setValue(subtitleInput,inputSetter, data.shelf+" SZ "+data.size+" "+ data.sku+" ZL");
+    setValue(subtitleInput,inputSetter, data.shelf+" SZ "+data.size+" "+ data.sku+" "+data.name);
 
     //await new Promise(resolve => setTimeout(resolve, 300));
     /*const applyAllButton=document.querySelector('button.fake-link');
@@ -173,5 +174,65 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 
   sendResponse({ images });
   }
+ else if (message.action === "LOADING_IMGS") {
+  const images = message.images;
+
+  const fileInput =
+    document.querySelector("#fehelix-uploader");
+
+  if (!fileInput) {
+    console.log("file input not found");
+    return;
+  }
+
+  const dataTransfer = new DataTransfer();
+
+  for (const imageUrl of images) {
+    try {
+      const response = await fetch(imageUrl);
+
+      if (!response.ok) {
+        console.log("failed to fetch:", imageUrl);
+        continue;
+      }
+
+      const blob = await response.blob();
+
+      const file = new File(
+        [blob],
+        `photo-${dataTransfer.items.length + 1}.jpg`,
+        {
+          type: blob.type || "image/jpeg"
+        }
+      );
+
+      dataTransfer.items.add(file);
+
+    } catch (error) {
+      console.log("image failed:", imageUrl, error);
+    }
+  }
+
+  console.log("files prepared:", dataTransfer.files.length);
+
+  fileInput.files = dataTransfer.files;
+
+  fileInput.dispatchEvent(
+    new Event("change", {
+      bubbles: true
+    })
+  );
+  sendResponse(true);
+}
+else if (message.action==="RETRIEVE_INFO"){
+  const description= document.getElementById("title");
+  const desc=description.textContent;
+  const price=document.querySelector(".a-price-whole");
+  const number = price.textContent.replace(".", "").trim();
+   sendResponse({
+      description: desc,
+      price: number
+    });
+}
   
 });

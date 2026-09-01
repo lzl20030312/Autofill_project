@@ -7,3 +7,7 @@
 .scraped-image.selected {
   outline: 4px solid blue;
 }
+#tabSelect {
+  width: 100px;
+  max-width: 100%;
+}
