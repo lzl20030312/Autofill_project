@@ -1,0 +1,9 @@
+.scraped-image {
+  width: 150px;
+  margin: 5px;
+  cursor: pointer;
+}
+
+.scraped-image.selected {
+  outline: 4px solid blue;
+}

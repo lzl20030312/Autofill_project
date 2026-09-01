@@ -1,3 +1,4 @@
+const selectedImages=new Set();
 async function reloadTabs(){
   const tabs = await chrome.tabs.query({});
 
@@ -48,9 +49,24 @@ document.getElementById("imageScrape").addEventListener("click", async () => {
     const image=document.createElement("img");
     image.src=img.src;
      image.width = 150;
+     image.className = "scraped-image";
   image.style.height = "auto";
     
     document.body.appendChild(image);
+     image.addEventListener("click", () => {
+    if (selectedImages.has(img.src)) {
+      // deselect
+      selectedImages.delete(img.src);
+      image.classList.remove("selected");
+    } else {
+      // select
+      selectedImages.add(img.src);
+      image.classList.add("selected");
+    }
+
+    console.log([...selectedImages]);
+  });
+
   });
 });
 
