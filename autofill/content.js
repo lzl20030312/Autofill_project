@@ -8,6 +8,15 @@ function setValue(element, setter,value){
   new Event("change", { bubbles: true })
 );
 }
+function amazonSearch(){
+   document.querySelectorAll("[data-old-hires]").forEach(element => {
+    const src = element.getAttribute("data-old-hires");
+
+    if (src) {
+      urls.add(src);
+    }
+  });
+}
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
    console.log("MESSAGE RECEIVED:", message);
   if (message.action === "AUTOFILL") {
@@ -157,15 +166,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
   else if (message.action ==="GET_PHOTOS"){
     const urls = new Set();
-
-  // Amazon high-resolution product images
-  document.querySelectorAll("[data-old-hires]").forEach(element => {
-    const src = element.getAttribute("data-old-hires");
-
-    if (src) {
-      urls.add(src);
-    }
-  });
+    amazonSearch();
+ 
 
   const images = [...urls].map(src => ({
     src: src
