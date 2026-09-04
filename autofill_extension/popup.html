@@ -1,4 +1,7 @@
 <html>
+    <head>
+  <link rel="stylesheet" href="popup.css">
+</head>
 <form>
 Description: <input id="description">
 <br>
@@ -16,9 +19,23 @@ SKU#: <input id="sku">
 Price: <input id="price" type="number" step="0.01">
 <br>
 <br>
+Initial: <input id="name">
+<br>
+<br>
 With a box? <input type="checkbox" id="box">
 <button id="autofill">Submit</button>
 
+<br><br>
+<select id="tabSelect"><option value="">Choose a tab</option></select>
+<br><br>
+
+<button id="retrieveInfo" type="button">Retrieve item's info(Amazon only)</button>
+<br>
+<br>
+<button id="imageScrape" type="button">Get images(Working on Amazon/ebay/)</button>
+
+<br><br>
+<button id="loading" type="button">Load images</button>
 </form>
 <script src="popup.js"></script>
 </html>

@@ -8,7 +8,82 @@ function setValue(element, setter,value){
   new Event("change", { bubbles: true })
 );
 }
-chrome.runtime.onMessage.addListener(async (message) => {
+function amazonSearch(urls){
+   document.querySelectorAll("[data-old-hires]").forEach(element => {
+    const src = element.getAttribute("data-old-hires");
+
+    if (src) {
+      urls.add(src);
+    }
+  });
+}
+
+  function ebaySearch(urls) {
+  document.querySelectorAll(".ux-image-carousel-item img").forEach(element => {
+    const src = element.dataset.zoomSrc;
+
+    if (src) {
+      urls.add(src);
+    }
+  });
+}
+function macysSearch(urls) {
+  document
+    .querySelectorAll(".product-image-wrapper-top-level img.picture-image")
+    .forEach(img => {
+      const baseSrc =
+        img.getAttribute("data-src") ||
+        img.src;
+
+      if (!baseSrc) return;
+
+      // remove existing query parameters
+      const cleanSrc = baseSrc.split("?")[0];
+
+      // request a large Macy's image
+      const highRes = `${cleanSrc}?wid=1500&fit=fit,1&fmt=jpeg`;
+
+      urls.add(highRes);
+    });
+}
+async function generalSearch(urls) {
+  document.querySelectorAll("img").forEach(img => {
+    if (img.naturalWidth >= 500 && img.naturalHeight >= 500) {
+      const src =
+        img.getAttribute("data-zoom-src") ||
+        img.getAttribute("data-old-hires") ||
+        img.getAttribute("data-src") ||
+        img.currentSrc ||
+        img.src;
+
+      if (src) {
+        urls.add(src);
+      }
+    }
+  });
+
+  const links = document.querySelectorAll("a[href]");
+
+  for (const a of links) {
+    const href = a.href;
+
+    if (!/\.(jpg|jpeg|png|webp|gif|avif)(\?|$)/i.test(href)) {
+      continue;
+    }
+
+    const img = new Image();
+    img.src = href;
+
+    await img.decode().catch(() => {});
+
+    if (img.naturalWidth >= 500 && img.naturalHeight >= 500) {
+      urls.add(href);
+    }
+  }
+}
+
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+   console.log("MESSAGE RECEIVED:", message);
   if (message.action === "AUTOFILL") {
     const data = message.data;
     const titleInput =
@@ -44,7 +119,7 @@ chrome.runtime.onMessage.addListener(async (message) => {
      const subtitleInput =
       document.querySelector('input[name="customLabel"]');
    
-    setValue(subtitleInput,inputSetter, data.shelf+" SZ "+data.size+" "+ data.sku+" ZL");
+    setValue(subtitleInput,inputSetter, data.shelf+" SZ "+data.size+" "+ data.sku+" "+data.name);
 
     //await new Promise(resolve => setTimeout(resolve, 300));
     /*const applyAllButton=document.querySelector('button.fake-link');
@@ -154,5 +229,88 @@ chrome.runtime.onMessage.addListener(async (message) => {
 
 
   }
+  else if (message.action ==="GET_PHOTOS"){
+    const urls = new Set();
+    const domain = window.location.hostname;
+    if (domain==="www.amazon.com"){
+    amazonSearch(urls);}
+    else if (domain==="www.ebay.com"){
+      ebaySearch(urls);
+    }
+    else if (domain==="www.macys.com"){
+      macysSearch(urls);
+    }
+    else{
+      await generalSearch(urls);
+    }
+ 
+
+  const images = [...urls].map(src => ({
+    src: src
+    
+  }));
+
+  sendResponse({ images });
+  }
+ else if (message.action === "LOADING_IMGS") {
+  const images = message.images;
+
+  const fileInput =
+    document.querySelector("#fehelix-uploader");
+
+  if (!fileInput) {
+    console.log("file input not found");
+    return;
+  }
+
+  const dataTransfer = new DataTransfer();
+
+  for (const imageUrl of images) {
+    try {
+      const response = await fetch(imageUrl);
+
+      if (!response.ok) {
+        console.log("failed to fetch:", imageUrl);
+        continue;
+      }
+
+      const blob = await response.blob();
+
+      const file = new File(
+        [blob],
+        `photo-${dataTransfer.items.length + 1}.jpg`,
+        {
+          type: blob.type || "image/jpeg"
+        }
+      );
+
+      dataTransfer.items.add(file);
+
+    } catch (error) {
+      console.log("image failed:", imageUrl, error);
+    }
+  }
+
+  console.log("files prepared:", dataTransfer.files.length);
+
+  fileInput.files = dataTransfer.files;
+
+  fileInput.dispatchEvent(
+    new Event("change", {
+      bubbles: true
+    })
+  );
+  sendResponse(true);
+}
+else if (message.action==="RETRIEVE_INFO"){
+  const description= document.getElementById("title");
+  const desc=description.textContent;
+  const price=document.querySelector(".a-price-whole");
+  const number = price.textContent.replace(".", "").trim();
+   sendResponse({
+      description: desc,
+      price: number
+    });
+}
   
 });
