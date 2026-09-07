@@ -266,30 +266,39 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   const dataTransfer = new DataTransfer();
 
   for (const imageUrl of images) {
-    try {
-      const response = await fetch(imageUrl);
+  try {
+    const result = await chrome.runtime.sendMessage({
+      action: "FETCH_IMAGE",
+      url: imageUrl
+    });
 
-      if (!response.ok) {
-        console.log("failed to fetch:", imageUrl);
-        continue;
-      }
-
-      const blob = await response.blob();
-
-      const file = new File(
-        [blob],
-        `photo-${dataTransfer.items.length + 1}.jpg`,
-        {
-          type: blob.type || "image/jpeg"
-        }
+    if (!result || !result.success) {
+      console.log(
+        "failed to fetch:",
+        imageUrl,
+        result?.error
       );
-
-      dataTransfer.items.add(file);
-
-    } catch (error) {
-      console.log("image failed:", imageUrl, error);
+      continue;
     }
+
+    // turn returned base64 data URL back into a Blob
+    const response = await fetch(result.dataUrl);
+    const blob = await response.blob();
+
+    const file = new File(
+      [blob],
+      `photo-${dataTransfer.items.length + 1}.jpg`,
+      {
+        type: blob.type || "image/jpeg"
+      }
+    );
+
+    dataTransfer.items.add(file);
+
+  } catch (error) {
+    console.log("image failed:", imageUrl, error);
   }
+}
 
   console.log("files prepared:", dataTransfer.files.length);
 
@@ -303,10 +312,62 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   sendResponse(true);
 }
 else if (message.action==="RETRIEVE_INFO"){
+  const domain = window.location.hostname;
+  let desc;
+  let number;
+  if (domain === "www.amazon.com"){
   const description= document.getElementById("title");
-  const desc=description.textContent;
+  desc=description.textContent;
   const price=document.querySelector(".a-price-whole");
-  const number = price.textContent.replace(".", "").trim();
+  number = price.textContent.replace(".", "").trim();}
+  else if (domain === "www.ebay.com") {
+    const description = document.querySelector('input[name="title"]');
+    desc = description?.value.trim();
+
+    const price = document.querySelector('input[name="price"]');
+    number = price?.value.trim();
+  }
+  else if (domain === "www.macys.com") {
+  const title = document.querySelector(".product-title");
+
+  desc = title?.textContent.trim();
+
+  const price = document.querySelector(
+    '.product-price-wrapper [aria-label^="Current Price"]'
+  );
+
+  number = price?.textContent.replace("$", "").trim();
+}
+else if (domain === "www.skechers.com") {
+  const description = document.querySelector(
+    ".c-product-details__product-name"
+  );
+
+  desc = description?.textContent.trim();
+
+  const prices = document.querySelectorAll(
+    ".prices .sales .value[content]"
+  );
+
+  const price = [...prices].find(element =>
+    element.getAttribute("content")?.trim()
+  );
+
+  number = price?.getAttribute("content").trim();
+}else if (domain === "www.newbalance.com") {
+  const description = document.querySelector(
+    "#product-title-pricing-desktop .product-name"
+  );
+
+  desc = "New Balance "+description?.textContent.trim();
+
+  const price = document.querySelector(
+    "#product-title-pricing-desktop .sales span[content]"
+  );
+
+  number = price?.getAttribute("content")?.trim();
+}
+
    sendResponse({
       description: desc,
       price: number
